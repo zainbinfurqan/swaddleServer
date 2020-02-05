@@ -26,6 +26,7 @@ exports.singupFN = async (req, res) => {
     if (req.body.firstName && req.body.lastName && req.body.role && req.body.password && req.body.email) {
 
         var hash = bcrypt.hashSync(req.body.password, salt);
+        // req.body.profilePic = 'defaultprofilepic'
         req.body.password = hash;
         //Register new user
         let new_user = await genericFunction._basePost(UserModel, req.body);

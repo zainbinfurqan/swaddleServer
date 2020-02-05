@@ -9,11 +9,13 @@
 "use strict";
 var mongoose = require('mongoose'),
     LoginModel = mongoose.model('loginSchema'),
+    UserModel = mongoose.model('userSchema'),
     cacheModel = mongoose.model('cacheSchema'),
     bcrypt = require('bcryptjs'),
     salt = bcrypt.genSaltSync(10),
     genericFunction = require('../../utils-funtions/genric-funtions'),
     jwt_token = require('../../utils-funtions/jwt-functions'),
+    utilitiesHelper = require('../../helpers/util-utilities'),
     { _responseWrapper } = require('../../utils-funtions/response-wapper')
 
 /*
@@ -37,7 +39,9 @@ exports.LoginFN = async (req, res) => {
             parameterToGet
         };
 
-        let auth = await GenericProcedure._baseFetch(LoginUser, args, "FindOne");
+        let auth = await genericFunction._baseFetch(LoginModel, args, "FindOne");
+
+        console.log(auth) 
 
         if (!auth.data)
             return _responseWrapper(
@@ -51,14 +55,15 @@ exports.LoginFN = async (req, res) => {
                 email: auth.data.email
             };
 
-            let parameterToGet = "fullName profilePic email ";
+            let parameterToGet = "firstName lastName email";
 
             let args_ = {
                 query,
                 parameterToGet
             };
 
-            let user_ = await GenericProcedure._baseFetch(RegisterUser, args_, "FindOne");
+            let user_ = await genericFunction._baseFetch(UserModel, args_, "FindOne");
+            console.log(user_)
             let obj = {
                 ...user_,
                 userId: user_.data._id
@@ -76,13 +81,13 @@ exports.LoginFN = async (req, res) => {
                     profilePic: user_.data.profilePic
                 }
             };
-            req.userId = auth.data.userId;
-            ActivityLog.setActivityLogFN(
-                req,
-                "User Login",
-                ActivityLog.schemasName["login"] + " login @ belief challenges",
-                {}
-            );
+            // req.userId = auth.data.userId;
+            // ActivityLog.setActivityLogFN(
+            //     req,
+            //     "User Login",
+            //     ActivityLog.schemasName["login"] + " login @ belief challenges",
+            //     {}
+            // );
 
             return _responseWrapper(
                 true,

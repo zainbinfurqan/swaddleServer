@@ -19,6 +19,10 @@ const userSchema = new mongoose.Schema({
         trim: true,
         lowercase: true,
     },
+    phoneNumber:{
+        type:String,
+        required:true
+    },
     isDelete: {
         type: Boolean,
         default: false
