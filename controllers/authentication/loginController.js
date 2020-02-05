@@ -22,70 +22,118 @@ var mongoose = require('mongoose'),
 * =======================================================================
 * */
 
-exports.addLoginFN = async (req, res) => {
-console.log(req.body.email)
+exports.LoginFN = async (req, res) => {
+
     if (req.body.email && req.body.password) {
 
         let query = {
             email: req.body.email
         };
 
-        let parameterToGet = "userId password email ";
+        let parameterToGet = "userId password email role";
 
         let args = {
             query,
             parameterToGet
         };
 
-        let login_data = await genericFunction._baseFetch(LoginModel, args, "FindOne");
-        if (!login_data.status) {
-            return _responseWrapper(false, login_data.error['message'], 202);
-        }
+        let auth = await GenericProcedure._baseFetch(LoginUser, args, "FindOne");
 
-        if (bcrypt.compareSync(req.body.password, login_data.data.password)) {
-            let jwtObj = {
-                _id: login_data.data._id,
-                userId: login_data.data.userId,
-                userEmail: login_data.data.email
+        if (!auth.data)
+            return _responseWrapper(
+                false,
+                "You have entered an invalid email or password",
+                400
+            );
+
+        if (bcrypt.compareSync(req.body.password, auth.data.password)) {
+            let query = {
+                email: auth.data.email
+            };
+
+            let parameterToGet = "fullName profilePic email ";
+
+            let args_ = {
+                query,
+                parameterToGet
+            };
+
+            let user_ = await GenericProcedure._baseFetch(RegisterUser, args_, "FindOne");
+            let obj = {
+                ...user_,
+                userId: user_.data._id
             }
-            let token = await jwt_token.generateToken(jwtObj);
-            if (token) {
-                let cacheData = {
-                    key: token,
-                    value: login_data.data.userId,
+
+            let token = await utilitiesHelper.generateJWTToken(obj);
+            let response_data = {
+                data: {
+                    token,
+                    userId: auth.data.userId,
+                    role: auth.data.role,
+                    fullName: user_.data.fullName,
+                    // _id: auth.data._id,
+                    email: auth.data.email,
+                    profilePic: user_.data.profilePic
                 }
-                let cache_data = await genericFunction._basePost(cacheModel, cacheData);
-                console.log(cache_data)
-                if (!cache_data.status) {
-                    return _responseWrapper(false, cache_data.error['message'], 202);
-                }
-                return _responseWrapper(true, "login", 200, login_data)
-            }
+            };
+            req.userId = auth.data.userId;
+            ActivityLog.setActivityLogFN(
+                req,
+                "User Login",
+                ActivityLog.schemasName["login"] + " login @ belief challenges",
+                {}
+            );
+
+            return _responseWrapper(
+                true,
+                "User logged in successfully",
+                200,
+                response_data
+            );
         } else {
-            return _responseWrapper(false, "password or email invalid", 202)
+            return _responseWrapper(
+                false,
+                "You have entered an invalid email or password",
+                400
+            );
         }
-
-
     } else {
-        return _responseWrapper(false, "please reqiured all fields", 202)
+        return _responseWrapper(false, "requiredAll", 400);
     }
 
 }
 
+exports.LogOutFN = async (req, res) => {
 
-
-exports.fetchLoginFN = async (req, res) => {
-
+    let apiToken = req.headers["authorization"];
+    if (apiToken) {
+        await cacheHelper.removeSession(
+            // cacheHelper.cacheInstance["session-cache"],
+            apiToken
+        );
+        // req.userId = req.body.userId
+        // ActivityLog.setActivityLogFN(
+        //     req,
+        //     "Logout",
+        //     "[" + req.method + "]: logout @ lemostre",
+        //     {}
+        // );
+        return _responseWrapper(true, "Logout successfully", 200);
+    } else return _responseWrapper(false, "Authorization token is required", 401);
 }
 
+// exports.fetchLoginFN = async (req, res) => {
 
-exports.putLoginFN = async (req, res) => {
-
-}
+// }
 
 
-exports.deleteLoginFN = async (req, res) => {
+// exports.putLoginFN = async (req, res) => {
 
-}
+// }
+
+
+// exports.deleteLoginFN = async (req, res) => {
+
+// }
 
 

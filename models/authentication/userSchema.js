@@ -1,9 +1,16 @@
 const mongoose = require('mongoose');
 
 const userSchema = new mongoose.Schema({
-    fullName: {
+    firstName: {
         type: String,
         required: true
+    },
+    lastName: {
+        type: String,
+        required: true
+    },
+    profilePic:{
+        type:Object,
     },
     email: {
         type: String,
@@ -17,4 +24,4 @@ const userSchema = new mongoose.Schema({
         default: false
     }
 }, { runSettersOnQuery: true });
-module.exports =  mongoose.model('userSchema', userSchema);
+module.exports = mongoose.model('userSchema', userSchema);

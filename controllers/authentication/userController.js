@@ -9,12 +9,12 @@
 "use strict";
 var mongoose = require('mongoose'),
     UserModel = mongoose.model('userSchema'),
-    ShopModel = mongoose.model('shopSchema'),
     loginSchema = mongoose.model('loginSchema'),
     bcrypt = require('bcryptjs'),
     salt = bcrypt.genSaltSync(10),
     genericFunction = require('../../utils-funtions/genric-funtions'),
-    { _responseWrapper } = require('../../utils-funtions/response-wapper')
+    { _responseWrapper } = require('../../utils-funtions/response-wapper'),
+    utilitiesHelper = require('../../helpers/util-utilities');
 
 /*
 * =======================================================================
@@ -23,42 +23,53 @@ var mongoose = require('mongoose'),
 * */
 
 exports.singupFN = async (req, res) => {
-    console.log(req.body)
-    if (req.body.email && req.body.fullName && req.body.shopName && req.body.address && req.body.password) {
-        let user_signip = await genericFunction._basePost(UserModel, req.body);
-        if (!user_signip.status) {
-            if (user_signip.error['code'] == 11000)
-                return _responseWrapper(false, "alreadyExist", 202);
-            return _responseWrapper(false, user_shop.error['message'], 202);
+    if (req.body.firstName && req.body.lastName && req.body.role && req.body.password && req.body.email) {
+
+        var hash = bcrypt.hashSync(req.body.password, salt);
+        req.body.password = hash;
+        //Register new user
+        let new_user = await genericFunction._basePost(UserModel, req.body);
+
+        if (!new_user.status) {
+            if (new_user.error['code'] == 11000)
+                return _responseWrapper(false, 'alreadyExist', 409)
+            return _responseWrapper(false, new_user.error['message'], 400)
         }
 
-        let shopData = {
-            userId: user_signip.data._id,
+        req.userId = new_user._id;
+
+        let authObject = {
+            userId: new_user._id,
             ...req.body
         }
 
-        let user_shop = await genericFunction._basePost(ShopModel, shopData);
-
-        if (!user_shop.status) {
-            return _responseWrapper(false, user_shop.error['message'], 202);
-        }
-        req.body.password = bcrypt.hashSync(req.body.password, salt);
-
-        let login_data = {
-            userId: user_signip.data._id,
-            ...req.body
+        // Create user auth
+        let new_user_auth = await genericFunction._basePost(loginSchema, authObject);
+        let obj = {
+            ...new_user,
+            userId: new_user.data._id
         }
 
-        let auth_data = await genericFunction._basePost(loginSchema, login_data)
+        if (!new_user_auth.status)
+            return _responseWrapper(false, new_user_auth.error['message'], 400)
 
-        if (!auth_data.status) {
-            return _responseWrapper(false, user_shop.error['message'], 202);
-        }
+        let token = await utilitiesHelper.generateJWTToken(obj);
+        let response_data = {
+            data: {
+                token,
+                userId: new_user.data._id,
+                fullName: new_user.data.fullName,
+                email: new_user.data.email,
+                profilePic: new_user.data.profilePic,
+                role: new_user_auth.data.role
+            }
+        };
 
-        return _responseWrapper(true, "createSuccess", 200)
+        return _responseWrapper(true, 'User successfully', 201, response_data)
+
 
     } else {
-        return _responseWrapper(false, "please reqiured all fields", 202)
+        return _responseWrapper(false, 'requiredAll', 400)
     }
 }
 

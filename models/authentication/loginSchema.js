@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+var ObjectId = mongoose.Schema.Types.ObjectId;
 
 const loginSchema = new mongoose.Schema({
     email: {
@@ -17,9 +18,13 @@ const loginSchema = new mongoose.Schema({
         type: Boolean,
         default: false,
     },
-    userId:{
-        type: Object,
+    role: {
+        type:String,
+        required:true
+    },
+    userId: {
+        type: ObjectId,
         required: true
     }
-},{ runSettersOnQuery: true });
-module.exports =  mongoose.model('loginSchema',loginSchema);
+}, { runSettersOnQuery: true });
+module.exports = mongoose.model('loginSchema', loginSchema);

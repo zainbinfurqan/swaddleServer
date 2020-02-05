@@ -8,7 +8,6 @@ exports.authenticationToken = async (req, res, next) => {
     if (apiToken) {
         let isVeried = await jwt_methods.verifyToken(apiToken);
         if (isVeried) {
-            console.log(isVeried)
             next()
         } else {
             res.send({
